@@ -1,4 +1,10 @@
-import { addExpense, removeExpense, editExpense } from '../../actions/expenses';
+import configureMockStore from 'redux-mock-store';
+import thunk from 'redux-thunk';
+import { startAddExpense, addExpense, removeExpense, editExpense } from '../../actions/expenses';
+import expenses from '../fixtures/expenses';
+import { dbRefExpenses } from '../../firebase/firebase';
+
+const createMockStore = configureMockStore([thunk]);
 
 test('should generate remove expense action object', () => {
   const action = removeExpense('12345');
@@ -28,36 +34,58 @@ test('should generate edit expense action object', () => {
 });
 
 test('should generate add expense action object with parameters', () => {
-  const expenseData = {
-    description: 'test expense',
-    amount: 150900,
-    createdAt: 1000,
-    note: 'This is a test note'
-  }
-  const action = addExpense(expenseData);
+  const expense = expenses[0];
+  const action = addExpense(expense);
   expect(action).toEqual({
     type: 'ADD_EXPENSE',
-    expense: {
-      ...expenseData,
-      id: expect.any(String),
-    }
+    expense: expense,
   });
 });
 
-test('should generate add expense action object with defaults', () => {
-  const action = addExpense();
-  const defaultValues = {
+test('should add expense to database and store', async () => {
+  const store = createMockStore({});
+  const expense = expenses[0];
+  delete expense.id; // ID is created by action function
+
+  await store.dispatch(startAddExpense(expense));
+
+  const expectedAction = {
+    type: 'ADD_EXPENSE',
+    expense: {
+      id: expect.any(String),
+      ...expense,
+    }
+  };
+  const dispatchedAction = store.getActions()[0];
+  expect(dispatchedAction).toEqual(expectedAction);
+
+  const id = dispatchedAction.expense.id;
+  const snapshot = await dbRefExpenses.child(id).once('value');
+  expect(snapshot.val()).toEqual(expense);
+});
+
+test('should add expense with defaults to database and store', async () => {
+  const store = createMockStore({});
+  const expenseDefaults = {
     description: '',
     note: '',
     amount: 0,
     createdAt: 0,
-    id: expect.any(String),
   };
-  expect(action).toEqual({
+
+  await store.dispatch(startAddExpense());
+
+  const expectedAction = {
     type: 'ADD_EXPENSE',
     expense: {
-      ...defaultValues,
       id: expect.any(String),
+      ...expenseDefaults,
     }
-  });
+  };
+  const dispatchedAction = store.getActions()[0];
+  expect(dispatchedAction).toEqual(expectedAction);
+
+  const id = dispatchedAction.expense.id;
+  const snapshot = await dbRefExpenses.child(id).once('value');
+  expect(snapshot.val()).toEqual(expenseDefaults);
 });
