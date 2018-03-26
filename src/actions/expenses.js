@@ -1,5 +1,5 @@
 import uuid from 'uuid';
-import { dbRefExpenses } from '../firebase/firebase';
+import { dbRefUsers, dbChildExpenses } from '../firebase/firebase';
 
 const addExpense = (expense) => ({
   type: 'ADD_EXPENSE',
@@ -7,7 +7,7 @@ const addExpense = (expense) => ({
 });
 
 const startAddExpense = (expenseData = {}) => {
-  return (dispatch) => {
+  return (dispatch, getState) => {
     const {
       description = '',
       note = '',
@@ -20,7 +20,8 @@ const startAddExpense = (expenseData = {}) => {
       amount,
       createdAt,
     };
-    return dbRefExpenses.push(expense)
+    const uid = getState().auth.uid;
+    return dbRefUsers.child(`${uid}${dbChildExpenses}`).push(expense)
       .then((ref) => {
         dispatch(addExpense({
           id: ref.key,
@@ -39,8 +40,9 @@ const removeExpense = (id) => ({
 });
 
 const startRemoveExpense = (id) => {
-  return (dispatch) => {
-    return dbRefExpenses.child(id).remove()
+  return (dispatch, getState) => {
+    const uid = getState().auth.uid;
+    return dbRefUsers.child(`${uid}${dbChildExpenses}`).child(id).remove()
       .then(() => {
         dispatch(removeExpense(id));
       })
@@ -57,8 +59,9 @@ const editExpense = (id, updates) => ({
 });
 
 const startEditExpense = (id, updates) => {
-  return (dispatch) => {
-    return dbRefExpenses.child(id).update(updates)
+  return (dispatch, getState) => {
+    const uid = getState().auth.uid;
+    return dbRefUsers.child(`${uid}${dbChildExpenses}`).child(id).update(updates)
       .then(() => {
         dispatch(editExpense(id, updates));
       })
@@ -74,8 +77,9 @@ const setExpenses = (expenses) => ({
 });
 
 const startSetExpenses = () => {
-  return (dispatch) => {
-    return dbRefExpenses.once('value')
+  return (dispatch, getState) => {
+    const uid = getState().auth.uid;
+    return dbRefUsers.child(`${uid}${dbChildExpenses}`).once('value')
       .then((snapshot) => {
         const expenses = [];
         snapshot.forEach((childSnapshot) => {

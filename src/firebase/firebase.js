@@ -11,11 +11,18 @@ const config = {
 firebase.initializeApp(config);
 
 const database = firebase.database();
-const dbRefExpenses = database.ref('expenses');
+const dbRefUsers = database.ref('users');
+const dbChildExpenses = '/expenses'
 
 const googleAuthProvider = new firebase.auth.GoogleAuthProvider();
 
-export { firebase, googleAuthProvider ,dbRefExpenses, database as default };
+export {
+  database as default,
+  firebase,
+  googleAuthProvider,
+  dbChildExpenses,
+  dbRefUsers,
+};
 
 // const expenses = []
 // expensesRef.on('child_removed', (snapshot) => {

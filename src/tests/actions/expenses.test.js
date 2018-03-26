@@ -1,11 +1,25 @@
 import configureMockStore from 'redux-mock-store';
 import thunk from 'redux-thunk';
-import { addExpense, startAddExpense, removeExpense, startRemoveExpense,
-  editExpense, startEditExpense, setExpenses, startSetExpenses } from '../../actions/expenses';
+import {
+  addExpense,
+  startAddExpense,
+  removeExpense,
+  startRemoveExpense,
+  editExpense,
+  startEditExpense,
+  setExpenses,
+  startSetExpenses, } from '../../actions/expenses';
 import expenses from '../fixtures/expenses';
-import { dbRefExpenses } from '../../firebase/firebase';
+import { dbRefUsers, dbChildExpenses } from '../../firebase/firebase';
 
+const uid = 'abc123456789';
 const createMockStore = configureMockStore([thunk]);
+const defaultState = {
+  auth: {
+    uid
+  }
+};
+const dbRefUserExpenses = dbRefUsers.child(`${uid}${dbChildExpenses}`);
 
 beforeEach(async () => {
   const expensesData = {};
@@ -13,9 +27,8 @@ beforeEach(async () => {
     const { id, ...expenseData } = expense;
     expensesData[id] = expenseData;
   });
-  await dbRefExpenses.set(expensesData);
+  await dbRefUserExpenses.set(expensesData);
 });
-
 
 test('should generate remove expense action object', () => {
   const action = removeExpense('12345');
@@ -28,10 +41,10 @@ test('should generate remove expense action object', () => {
 test('should remove expense from firebase', async () => {
   const expense = expenses[0];
   const id = expense.id;
-  let snapshot = await dbRefExpenses.child(id).once('value');
+  let snapshot = await dbRefUserExpenses.child(id).once('value');
   expect(snapshot.val()).toBeTruthy();
 
-  const store = createMockStore({});
+  const store = createMockStore(defaultState);
   await store.dispatch(startRemoveExpense(id));
   const action = store.getActions()[0];
   const expectedAction = {
@@ -40,7 +53,7 @@ test('should remove expense from firebase', async () => {
   };
   expect(action).toEqual(expectedAction);
 
-  snapshot = await dbRefExpenses.child(id).once('value');
+  snapshot = await dbRefUserExpenses.child(id).once('value');
   expect(snapshot.val()).toBeFalsy();
 });
 
@@ -75,7 +88,7 @@ test('should edit expense on firebase', async () => {
     ...updates,
   };
 
-  const store = createMockStore({});
+  const store = createMockStore(defaultState);
   await store.dispatch(startEditExpense(id, updates));
   const action = store.getActions()[0];
   const expectedAction = {
@@ -85,7 +98,7 @@ test('should edit expense on firebase', async () => {
   };
   expect(action).toEqual(expectedAction);
 
-  const snapshot = await dbRefExpenses.child(id).once('value');
+  const snapshot = await dbRefUserExpenses.child(id).once('value');
   expect(snapshot.val()).toEqual(updatedExpenseData);
 });
 
@@ -99,7 +112,7 @@ test('should generate add expense action object with parameters', () => {
 });
 
 test('should add expense to database and store', async () => {
-  const store = createMockStore({});
+  const store = createMockStore(defaultState);
   const expense = {
     description: 'Test expense',
     amount: 9995,
@@ -120,12 +133,12 @@ test('should add expense to database and store', async () => {
   expect(dispatchedAction).toEqual(expectedAction);
 
   const id = dispatchedAction.expense.id;
-  const snapshot = await dbRefExpenses.child(id).once('value');
+  const snapshot = await dbRefUserExpenses.child(id).once('value');
   expect(snapshot.val()).toEqual(expense);
 });
 
 test('should add expense with defaults to database and store', async () => {
-  const store = createMockStore({});
+  const store = createMockStore(defaultState);
   const expenseDefaults = {
     description: '',
     note: '',
@@ -146,7 +159,7 @@ test('should add expense with defaults to database and store', async () => {
   expect(dispatchedAction).toEqual(expectedAction);
 
   const id = dispatchedAction.expense.id;
-  const snapshot = await dbRefExpenses.child(id).once('value');
+  const snapshot = await dbRefUserExpenses.child(id).once('value');
   expect(snapshot.val()).toEqual(expenseDefaults);
 });
 
@@ -160,7 +173,7 @@ test('should setup set expense action object with data', () => {
 });
 
 test('should fetch the expenses from firebase', async () => {
-  const store = createMockStore({});
+  const store = createMockStore(defaultState);
   await store.dispatch(startSetExpenses());
   const action = store.getActions()[0];
   const expected = {
