@@ -42,11 +42,38 @@ const editExpense = (id, updates) => ({
   type: 'EDIT_EXPENSE',
   id,
   updates
-})
+});
+
+const setExpenses = (expenses) => ({
+  type: 'SET_EXPENSES',
+  expenses,
+});
+
+const startSetExpenses = () => {
+  return (dispatch) => {
+    return dbRefExpenses.once('value')
+      .then((snapshot) => {
+        const expenses = [];
+        snapshot.forEach((childSnapshot) => {
+          const id = childSnapshot.key;
+          expenses.push({
+            id,
+            ...childSnapshot.val(),
+          });
+        });
+        dispatch(setExpenses(expenses));
+      })
+      .catch((error) => {
+        console.error('Error fetching expenses from Firebase: ', error);
+      })
+  }
+};
 
 export {
   addExpense,
   editExpense,
   removeExpense,
+  setExpenses,
   startAddExpense,
+  startSetExpenses,
 };
