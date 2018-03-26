@@ -38,6 +38,18 @@ const removeExpense = (id) => ({
   id,
 });
 
+const startRemoveExpense = (id) => {
+  return (dispatch) => {
+    return dbRefExpenses.child(id).remove()
+      .then(() => {
+        dispatch(removeExpense(id));
+      })
+      .catch((error) => {
+        console.error('Error removing expense from Firebase: ', error);
+      })
+  }
+}
+
 const editExpense = (id, updates) => ({
   type: 'EDIT_EXPENSE',
   id,
@@ -75,5 +87,6 @@ export {
   removeExpense,
   setExpenses,
   startAddExpense,
+  startRemoveExpense,
   startSetExpenses,
 };
