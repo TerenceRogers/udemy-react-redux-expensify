@@ -1,6 +1,7 @@
 import configureMockStore from 'redux-mock-store';
 import thunk from 'redux-thunk';
-import { startAddExpense, addExpense, removeExpense, startRemoveExpense, editExpense, setExpenses, startSetExpenses } from '../../actions/expenses';
+import { addExpense, startAddExpense, removeExpense, startRemoveExpense,
+  editExpense, startEditExpense, setExpenses, startSetExpenses } from '../../actions/expenses';
 import expenses from '../fixtures/expenses';
 import { dbRefExpenses } from '../../firebase/firebase';
 
@@ -24,6 +25,25 @@ test('should generate remove expense action object', () => {
   });
 });
 
+test('should remove expense from firebase', async () => {
+  const expense = expenses[0];
+  const id = expense.id;
+  let snapshot = await dbRefExpenses.child(id).once('value');
+  expect(snapshot.val()).toBeTruthy();
+
+  const store = createMockStore({});
+  await store.dispatch(startRemoveExpense(id));
+  const action = store.getActions()[0];
+  const expectedAction = {
+    type: 'REMOVE_EXPENSE',
+    id,
+  };
+  expect(action).toEqual(expectedAction);
+
+  snapshot = await dbRefExpenses.child(id).once('value');
+  expect(snapshot.val()).toBeFalsy();
+});
+
 test('should generate edit expense action object', () => {
   const action = editExpense(
     '12345',
@@ -41,6 +61,32 @@ test('should generate edit expense action object', () => {
       note: 'new note'
     }
   });
+});
+
+test('should edit expense on firebase', async () => {
+  const expense = expenses[0];
+  const { id, ...expenseData } = expense;
+  const updates = {
+    description: 'modified description',
+    note: 'modified note'
+  };
+  const updatedExpenseData = {
+    ...expenseData,
+    ...updates,
+  };
+
+  const store = createMockStore({});
+  await store.dispatch(startEditExpense(id, updates));
+  const action = store.getActions()[0];
+  const expectedAction = {
+    type: 'EDIT_EXPENSE',
+    id,
+    updates,
+  };
+  expect(action).toEqual(expectedAction);
+
+  const snapshot = await dbRefExpenses.child(id).once('value');
+  expect(snapshot.val()).toEqual(updatedExpenseData);
 });
 
 test('should generate add expense action object with parameters', () => {
@@ -123,14 +169,3 @@ test('should fetch the expenses from firebase', async () => {
   };
   expect(action).toEqual(expected);
 });
-
-test('should remove expense from firebase', async () => {
-  const expense = expenses[0];
-  const id = expense.id;
-  let snapshot = await dbRefExpenses.child(id).once('value');
-  expect(snapshot.val()).toBeTruthy();
-  const store = createMockStore({});
-  await store.dispatch(startRemoveExpense(id));
-  snapshot = await dbRefExpenses.child(id).once('value');
-  expect(snapshot.val()).toBeNull();
-})

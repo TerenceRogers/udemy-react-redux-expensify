@@ -46,15 +46,27 @@ const startRemoveExpense = (id) => {
       })
       .catch((error) => {
         console.error('Error removing expense from Firebase: ', error);
-      })
-  }
-}
+      });
+  };
+};
 
 const editExpense = (id, updates) => ({
   type: 'EDIT_EXPENSE',
   id,
   updates
 });
+
+const startEditExpense = (id, updates) => {
+  return (dispatch) => {
+    return dbRefExpenses.child(id).update(updates)
+      .then(() => {
+        dispatch(editExpense(id, updates));
+      })
+      .catch((error) => {
+        console.error('Error updating expense on Firebase: ', error);
+      });
+  };
+};
 
 const setExpenses = (expenses) => ({
   type: 'SET_EXPENSES',
@@ -87,6 +99,7 @@ export {
   removeExpense,
   setExpenses,
   startAddExpense,
+  startEditExpense,
   startRemoveExpense,
   startSetExpenses,
 };
