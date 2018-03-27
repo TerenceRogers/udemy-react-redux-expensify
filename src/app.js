@@ -18,6 +18,7 @@ const jsx = (
     <AppRouter />
   </Provider>
 );
+
 let hasRendered = false;
 const renderApp = async () => {
   if (!hasRendered) {
